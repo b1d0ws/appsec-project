@@ -1,0 +1,41 @@
+{% extends "base.html" %} {% block title %} Admin Dashboard {% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h1 class="text-center mb-4">Admin Panel</h1>
+
+    <!-- Search Form -->
+    <form method="GET" action="{{ url_for('views.admin_dashboard') }}" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="query" class="form-control" placeholder="Search notes..." required>
+            <div class="input-group-append">
+                <button class="btn btn-primary" type="submit">Search</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Display Notes -->
+    {% if query %}
+        <h2>Search Results:</h2>
+        {% if notes %}
+            <ul class="list-group">
+                {% for note in notes %}
+                <li class="list-group-item">{{ note }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+        <p>No notes found.</p>
+        {% endif %}
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('views.fetch_url') }}">
+        <div class="form-group">
+            <label for="url">Fetch Resource from URL</label>
+            <input type="text" name="url" id="url" class="form-control" placeholder="Enter a URL">
+        </div>
+        <button type="submit" class="btn btn-primary">Fetch</button>
+    </form>
+</div>
+
+{% endblock %}

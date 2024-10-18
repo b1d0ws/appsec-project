@@ -1,21 +1,28 @@
 {% extends "base.html" %} {% block title %} Home {% endblock %}
 
 {% block content %}
-<h1 align="center">Notes</h1>
-<ul class="list-group list-group-flush" id="notes">
-    {% for note in user.notes %}
-    <li class="list-group-item">{{ note.data }}
-        <button type="button" class="close" onClick="deleteNote({{ note.id }})">
-            <span aria-hidden="true">&times;</span>
-        </button>
-    </li>
-    {% endfor %}
-</ul>
-<form method="POST">
-    <textarea name="note" id="note" class="form-control"></textarea>
-    <br>
-    <div align="center">
-        <button type="submit" class="btn btn-primary">Add Note</button>
+<div class="container mt-5">
+    <div class="card text-center">
+        <div class="card-body">
+            <h1 class="card-title">Welcome to b1d0ws AppSec Project!</h1>
+            <div class="d-flex justify-content-center align-items-center mt-3">
+                <div>
+                    <img src="{{ url_for('static', filename='images/youtube-icon.jpg') }}" alt="icon" class="rounded-circle" style="width: 100px; height: 100px;">
+                </div>
+            </div>
+            <div class="mt-3">
+                <p class="card-text">This project is followed by the articles below:</p>
+                <ul class="list-unstyled">
+                    <li>
+                        <a href="https://www.google.com" target="_blank" class="text-decoration-none text-primary">Google.com</a>
+                    </li>
+                    <li>
+                        <a href="https://www.example.com" target="_blank" class="text-decoration-none text-primary">Example.com</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
-</form>
+</div>
+
 {% endblock %}

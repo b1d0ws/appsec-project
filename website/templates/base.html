@@ -15,23 +15,38 @@
         crossorigin="anonymous"
       />
 
+      <!-- Adding Fonts -->
+      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+      <!-- Adding CSS File -->
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
       <title>{% block title %}Home{% endblock %}</title>
 
     </head>
     <body>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar">
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar" aria-label="Toggle navigation" aria-controls="navbar" aria-expanded="false">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbar">
-                <div class="navbar-nav">
-                    {% if user.is_authenticated %}
+                <div class="navbar-nav custom-margin">
                     <a class="nav-item nav-link" id="home" href="/">Home</a>
+                    {% if user.is_authenticated %}
+                    <a class="nav-item nav-link" id="profile" href="/notes">Notes</a>
+                    {% endif %} 
+                </div>
+                {% if user.is_authenticated %}
+                <div class="navbar-nav ml-auto custom-margin">
+                    <a class="nav-item nav-link" id="profile" href="{{ url_for('views.profile', user_id=user.id) }}">Profile</a>
                     <a class="nav-item nav-link" id="logout" href="/logout">Logout</a>
-                    {% else %}
+                </div>
+                {% else %}
+                <div class="navbar-nav ml-auto custom-margin">
                     <a class="nav-item nav-link" id="login" href="/login">Login</a>
                     <a class="nav-item nav-link" id="signUp" href="/sign-up">Sign Up</a>
-                    {% endif %}
+                </div>
+                {% endif %}           
                 </div>
             </div>
         </nav>
@@ -40,14 +55,14 @@
         {% if messages %}
             {% for category, message in messages %}
             {% if category == 'error' %}
-            <div class="alert alert-danger alter-dismissable fade show" role="alert">
+            <div class="alert alert-danger alter-dismissible fade show" role="alert">
                 {{ message }}
                 <button type="button" class="close" data-dismiss="alert">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             {% else %}
-            <div class="alert alert-success alter-dismissable fade show" role="alert">
+            <div class="alert alert-success alter-dismissible fade show" role="alert">
                 {{ message }}
                 <button type="button" class="close" data-dismiss="alert">
                     <span aria-hidden="true">&times;</span>

@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
-from .models import User
+from .models import User, Token
 from . import db
 from flask_login import login_user, login_required, logout_user, current_user
+import hashlib, random, time
 
 auth = Blueprint('auth', __name__)
 
@@ -34,7 +35,7 @@ def logout():
 def sign_up():
     if request.method == 'POST':
         email = request.form.get('email')
-        first_name = request.form.get('firstName')
+        username = request.form.get('username')
         password1 = request.form.get('password1')
         password2 = request.form.get('password2')
 
@@ -43,19 +44,78 @@ def sign_up():
             flash('Email alreadye exists', category='error')
         elif len(email) < 4:
             flash('Email must be greater than 3 characters', category='error')
-        elif len(first_name) < 2:
+        elif len(username) < 2:
             flash('First name must be greater than 1 characters', category='error')
         elif password1 != password2:
             flash('Passwords don\'t match', category='error')
         elif len(password1) < 5:
             flash('Password must be at least 5 characters', category='error')
         else:
-            new_user = User(email=email, first_name=first_name, password=password1)
+            new_user = User(email=email, username=username, password=password1)
             db.session.add(new_user)
             db.session.commit()
-            login_user(user, remember=True)
+            login_user(new_user, remember=True)
             flash('Account created!', category='success')
             return redirect(url_for('views.home'))
             
 
     return render_template("sign_up.html", user=current_user)
+
+# Forgot Password Route
+@auth.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    email = request.form.get('forgot-email')
+    
+    user = User.query.filter_by(email=email).first()
+
+    # Checking if user exists
+    if user:
+        token = str(user.id)
+        random.seed(int(time.time()) * 1000)
+        salt = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
+        token = token + hashlib.sha256((token + salt).encode()).hexdigest()  # Generate a secure token
+        new_token = Token(user_id=user.id, token=token)
+        db.session.add(new_token)
+        db.session.commit()
+        flash('A recovery email has been sent to your address!', 'success')
+    else:
+        flash('Email address not found!', 'error')
+
+    return redirect(url_for('auth.login'))  # Redirect to the login page after submission
+
+# Reset Password Route
+@auth.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    token_entry = Token.query.filter_by(token=token).first()
+    
+    if request.method == 'POST':
+        new_password = request.form.get('new_password')
+        if token_entry:
+            user = token_entry.user
+            user.password = new_password  # Use a hashing function
+            db.session.commit()
+            flash('Your password has been updated!', 'success')
+            return redirect(url_for('auth.login'))
+        else:
+            flash('Invalid or expired token.', 'danger')
+    
+    return render_template('reset_password.html', token=token, user=current_user)
+
+
+@auth.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+
+    # Check if new password matches confirmation
+    if new_password != confirm_password:
+        flash('Passwords do not match', 'danger')
+        return redirect(url_for('views.profile', user_id=current_user.id))
+
+    # Update the password
+    current_user.password = new_password
+    db.session.commit()
+    flash('Password updated successfully', 'success')
+    return redirect(url_for('views.profile', user_id=current_user.id))

@@ -1,17 +1,53 @@
-{% extends "base.html" %} {% block title %} Login {% endblock %}
+{% extends "base.html" %}
+{% block title %} Login {% endblock %}
 
 {% block content %}
-<form method="POST">
-    <h3 align="center">Login</h3>
-    <div class="form-group">
-        <label for="email">Email Address</label>
-        <input type="email" class="form-control" id="email" name="email" placeholder="Enter email">
+<div class="container mt-5">
+    <form method="POST">
+        <h3 align="center">Login</h3>
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" class="form-control" id="email" name="email" placeholder="Enter email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" id="password" name="password" placeholder="Enter password" required>
+        </div>
+        
+        <div class="form-group d-flex justify-content-between align-items-center">
+            <div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+            <div>
+                <button type="button" class="btn btn-link" data-toggle="modal" data-target="#forgotPasswordModal">
+                    Forgot my password
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Modal for password recovery -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1" role="dialog" aria-labelledby="forgotPasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="forgotPasswordModalLabel">Forgot Password</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form  action="{{ url_for('auth.forgot_password') }}" method="POST" id="forgotPasswordForm">
+                        <div class="form-group">
+                            <label for="forgot-email">Enter your email address</label>
+                            <input type="email" class="form-control" id="forgot-email" name="forgot-email" placeholder="Enter your email" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send Recovery Email</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" class="form-control" id="password" name="password" placeholder="Enter password">
-    </div>
-    <br>
-    <button type="submit" class="btn btn-primary">Submit</button>
-</form>
+</div>
+
 {% endblock %}

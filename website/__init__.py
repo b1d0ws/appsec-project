@@ -11,11 +11,14 @@ def create_app():
     app = Flask(__name__)
 
     # Secret Key will be used to generate the tokens
-    app.config['SECRET_KEY'] = 'SuperSecretKey!'
+    app.config['SECRET_KEY'] = 'secretkey'
 
     # Configuring database
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
     db.init_app(app)
+
+    # Defining the uploade folder for user images
+    app.config['UPLOAD_FOLDER'] = 'website/static/userimages/'
 
     # Defining blueprints to track routes
     from .views import views
