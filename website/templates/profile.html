@@ -11,7 +11,7 @@
                 <p class="card-text"><strong>Email:</strong> {{ user.email }}</p>
                 <p class="card-text"><strong>Username:</strong> {{ user.username }}</p>
                 <p class="card-text"><strong>Description:</strong></p>
-                <p class="card-text">{{ user.description|safe if user.description else 'No description provided.' }}</p>
+                <p class="card-text">{{ user.description if user.description else 'No description provided.' }}</p>
 
                 {% if current_user.id == user.id %}
                 <form method="POST" action="{{ url_for('views.profile', user_id=user.id) }}" class="mt-5">
@@ -53,6 +53,7 @@
         </div>
         <div class="card-body">
             <form method="POST" action="{{ url_for('auth.change_password') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <div class="form-group">
                     <label for="new_password">New Password:</label>
                     <input type="password" class="form-control" id="new_password" name="new_password" required placeholder="Enter your new password">

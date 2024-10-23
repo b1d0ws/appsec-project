@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for
+from flask import Blueprint, render_template, request, flash, redirect, url_for, session
 from .models import User, Token
 from . import db
 from flask_login import login_user, login_required, logout_user, current_user
@@ -97,7 +97,7 @@ def reset_password(token):
             flash('Your password has been updated!', 'success')
             return redirect(url_for('auth.login'))
         else:
-            flash('Invalid or expired token.', 'danger')
+            flash('Invalid or expired token.', 'error')
     
     return render_template('reset_password.html', token=token, user=current_user)
 
@@ -105,13 +105,18 @@ def reset_password(token):
 @auth.route('/change_password', methods=['POST'])
 @login_required
 def change_password():
-
+  
+    csrf_token = request.form.get('csrf_token')
+    if not csrf_token or csrf_token != session.pop('csrf_token', None):
+        flash('Invalid CSRF token', 'error')
+        return redirect(url_for('views.profile', user_id=current_user.id))
+    
     new_password = request.form.get('new_password')
     confirm_password = request.form.get('confirm_password')
 
     # Check if new password matches confirmation
     if new_password != confirm_password:
-        flash('Passwords do not match', 'danger')
+        flash('Passwords do not match', 'error')
         return redirect(url_for('views.profile', user_id=current_user.id))
 
     # Update the password
@@ -119,3 +124,5 @@ def change_password():
     db.session.commit()
     flash('Password updated successfully', 'success')
     return redirect(url_for('views.profile', user_id=current_user.id))
+
+

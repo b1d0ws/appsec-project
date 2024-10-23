@@ -2,14 +2,13 @@
 
 By now, we have this vulnerabilities:
 
-* Weak Password Reset Token Generation
-* User Enumeration
-* XSS
+* Lack of Authentication
 * Arbitrary File Upload and Path Traversal
+* XSS
+* CSRF
+* Weak Password Reset Token Generation
 * IDOR
 * Privilege Escalation
-* CSRF
-* Lack of Authentication
 * SQL Injection
 * SSTI
 * SSRF

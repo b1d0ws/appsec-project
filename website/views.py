@@ -1,15 +1,15 @@
-from flask import Blueprint, render_template, request, flash, jsonify, redirect, url_for, current_app, render_template_string
+from flask import Blueprint, render_template, request, flash, jsonify, redirect, url_for, current_app, render_template_string, session
 from flask_login import login_required, current_user
 from .models import Note, User
 from . import db
 import json, os, requests
 from sqlalchemy import text
+from werkzeug.utils import secure_filename
 
 views = Blueprint('views', __name__)
 
 @views.route('/', methods=['GET', 'POST'])
-def home():
-    
+def home():  
     return render_template("home.html", user=current_user)
 
 
@@ -36,6 +36,9 @@ def profile(user_id):
 
     user = User.query.get_or_404(user_id)
 
+    csrf_token = os.urandom(16).hex()
+    session['csrf_token'] = csrf_token
+
     if request.method == 'POST':
         description = request.form.get('description')
 
@@ -46,7 +49,7 @@ def profile(user_id):
         else:
             flash('Description cannot be empty!', 'error')
 
-    return render_template("profile.html", user=user)
+    return render_template("profile.html", csrf_token=csrf_token, user=user)
 
 @views.route('/delete-note', methods=['POST'])
 @login_required
@@ -61,23 +64,32 @@ def delete_node():
 
 # Upload Image Route
 @views.route('/upload_image', methods=['POST'])
+@login_required
 def upload_image():
+
+    ALLOWED_EXTENSIONS = ['png', 'jpg', 'jpeg']
 
     if 'profile_image' in request.files:
         file = request.files['profile_image']
-        filename = file.filename
+        # Using secure_filename to prevent path traversal
+        filename = secure_filename(file.filename)
+
+        # Checking extension
+        extension = filename.rsplit('.', 1)[1].lower()
 
         upload_folder = current_app.config['UPLOAD_FOLDER']
 
-        # Save the file
-        file.save(os.path.join(upload_folder, filename))
-
-        # print(filename)
+        if extension in ALLOWED_EXTENSIONS:
+            # Save the file
+            file.save(os.path.join(upload_folder, filename))
         
-        current_user.image = filename
-        db.session.commit()
+            current_user.image = filename
+            db.session.commit()
 
-        flash('Profile image updated successfully', 'success')
+            flash('Profile image updated successfully', 'success')
+
+        else:
+            flash('Something went wrong!', 'error')
 
     return redirect(url_for('views.profile', user_id=current_user.id))
 
