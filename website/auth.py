@@ -97,7 +97,7 @@ def reset_password(token):
             flash('Your password has been updated!', 'success')
             return redirect(url_for('auth.login'))
         else:
-            flash('Invalid or expired token.', 'danger')
+            flash('Invalid or expired token.', 'error')
     
     return render_template('reset_password.html', token=token, user=current_user)
 
