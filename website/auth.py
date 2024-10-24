@@ -92,7 +92,7 @@ def reset_password(token):
         new_password = request.form.get('new_password')
         if token_entry:
             user = token_entry.user
-            user.password = new_password  # Use a hashing function
+            user.password = new_password
             db.session.commit()
             flash('Your password has been updated!', 'success')
             return redirect(url_for('auth.login'))
