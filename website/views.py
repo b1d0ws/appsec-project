@@ -128,7 +128,7 @@ def admin_dashboard():
 @views.route('/admin/fetch-url', methods=['POST'])
 @login_required
 def fetch_url():
-    if current_user.role == 'administraor':
+    if current_user.role != 'administrator':
         return "Access Denied", 403
 
     url = request.form.get('url')
