@@ -2,9 +2,11 @@ from flask import Blueprint, render_template, request, flash, jsonify, redirect,
 from flask_login import login_required, current_user
 from .models import Note, User
 from . import db
-import json, os, requests
+import json, os, requests, re, socket
 from sqlalchemy import text
 from werkzeug.utils import secure_filename
+from urllib.parse import urlparse
+from ipaddress import ip_address, ip_network
 
 views = Blueprint('views', __name__)
 
@@ -57,10 +59,14 @@ def delete_node():
     note = json.loads(request.data)
     noteId = note['noteId']
     note = Note.query.get(noteId)
-    if note: 
-        db.session.delete(note)
-        db.session.commit()
-    return jsonify({})
+    
+    if note:
+        # Checking authorization
+        if note.user_id == current_user.id:
+            db.session.delete(note)
+            db.session.commit()
+            return jsonify({"message": "Note successfully deleted"}), 200
+    return jsonify({"message": "You cannot delete this note"}), 403
 
 # Upload Image Route
 @views.route('/upload_image', methods=['POST'])
@@ -115,8 +121,7 @@ def admin_dashboard():
         if new_role.lower() == 'administrator':
             return jsonify({"message": "You cannot update the role to 'administrator'"}), 404
         else:
-            # user.role = new_role
-            user.role = new_role.encode('utf-8', 'ignore').decode('utf-8')
+            user.role = new_role
 
         db.session.commit()
 
@@ -129,25 +134,60 @@ def admin_dashboard():
     notes = []
 
     if query:
-        # Search for notes by title or content if the query is provided
-        sql = text(f"SELECT * FROM note WHERE data LIKE '%{query}%'")
-        notes = db.session.execute(sql).fetchall()
+        sql = text("SELECT * FROM note WHERE data LIKE :query")
+        notes = db.session.execute(sql, {'query': f'%{query}%'}).fetchall()
 
-    rendered_notes = [render_template_string(note.data) for note in notes]
-
-    return render_template("admin.html", user=current_user, query=query, notes=rendered_notes)
+    return render_template("admin.html", user=current_user, query=query, notes=notes)
 
 @views.route('/admin/fetch-url', methods=['POST'])
 @login_required
 def fetch_url():
-    if current_user.role == 'administraor':
+    if current_user.role != 'administrator':
         return "Access Denied", 403
 
+    '''
+    TRUSTED_DOMAINS = ["example.com", "another-trusted-domain.com"]
+
+    hostname = parsed_url.hostname
+    if hostname not in TRUSTED_DOMAINS:
+        return jsonify({"error": "Access to this host is restricted"}), 403
+    '''
+
+    FORBIDDEN_IP_RANGES = [
+    ip_network("127.0.0.0/8"),        # Loopback
+    ip_network("10.0.0.0/8"),         # Private
+    ip_network("172.16.0.0/12"),      # Private
+    ip_network("192.168.0.0/16"),     # Private
+    ip_network("169.254.0.0/16"),     # Link-local
+    ip_network("::1/128"),            # IPv6 loopback
+    ip_network("fc00::/7"),           # IPv6 unique local
+    ip_network("fe80::/10")           # IPv6 link-local
+]
+        
     url = request.form.get('url')
+    parsed_url = urlparse(url)
+
+    # Validate URL scheme
+    if parsed_url.scheme not in ["http", "https"]:
+        return jsonify({"error": "Invalid URL scheme"}), 400
+
+    # Validate host and avoid private IPs
+    hostname = parsed_url.hostname
+    if re.match(r"^(localhost|127\.|0\.0\.0\.0|::1|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01]))", hostname):
+        return jsonify({"error": "Access to this host is restricted"}), 403
     
     try:
-        # Fetch the external URL without validation (vulnerable to SSRF)
+
+        # Resolve hostname to an IP and validate it
+        resolved_ip = ip_address(socket.gethostbyname(hostname))
+
+        # Check if the resolved IP falls within forbidden ranges
+        if any(resolved_ip in net for net in FORBIDDEN_IP_RANGES):
+            return jsonify({"error": "Access to this IP is restricted"}), 403
+
         response = requests.get(url)
         return response.content
+    
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+    

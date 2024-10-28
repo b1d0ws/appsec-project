@@ -15,19 +15,21 @@
         </div>
     </form>
 
+    <div class="mb-3">
     <!-- Display Notes -->
     {% if query %}
         <h2>Search Results:</h2>
         {% if notes %}
             <ul class="list-group">
                 {% for note in notes %}
-                <li class="list-group-item">{{ note }}</li>
+                <li class="list-group-item">{{ note.data }}</li>
                 {% endfor %}
             </ul>
         {% else %}
         <p>No notes found.</p>
         {% endif %}
     {% endif %}
+    </div>
 
     <form method="POST" action="{{ url_for('views.fetch_url') }}">
         <div class="form-group">

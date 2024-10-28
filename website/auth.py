@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from .models import User, Token
 from . import db
 from flask_login import login_user, login_required, logout_user, current_user
-import hashlib, random, time
+import hashlib, random, time, secrets, string
 
 auth = Blueprint('auth', __name__)
 
@@ -71,8 +71,7 @@ def forgot_password():
     # Checking if user exists
     if user:
         token = str(user.id)
-        random.seed(int(time.time()) * 1000)
-        salt = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz0123456789', k=10))
+        salt = ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(10))
         token = token + hashlib.sha256((token + salt).encode()).hexdigest()  # Generate a secure token
         new_token = Token(user_id=user.id, token=token)
         db.session.add(new_token)
