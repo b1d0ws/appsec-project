@@ -9,7 +9,6 @@ views = Blueprint('views', __name__)
 
 @views.route('/', methods=['GET', 'POST'])
 def home():
-    
     return render_template("home.html", user=current_user)
 
 
@@ -103,7 +102,6 @@ def admin_dashboard():
         if new_role.lower() == 'administrator':
             return jsonify({"message": "You cannot update the role to 'administrator'"}), 404
         else:
-            # user.role = new_role
             user.role = new_role.encode('utf-8', 'ignore').decode('utf-8')
 
         db.session.commit()
@@ -117,7 +115,6 @@ def admin_dashboard():
     notes = []
 
     if query:
-        # Search for notes by title or content if the query is provided
         sql = text(f"SELECT * FROM note WHERE data LIKE '%{query}%'")
         notes = db.session.execute(sql).fetchall()
 
@@ -134,7 +131,6 @@ def fetch_url():
     url = request.form.get('url')
     
     try:
-        # Fetch the external URL without validation (vulnerable to SSRF)
         response = requests.get(url)
         return response.content
     except Exception as e:
