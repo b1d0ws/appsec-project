@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, flash, jsonify, redirect,
 from flask_login import login_required, current_user
 from .models import Note, User
 from . import db
-import json, os, requests, re, socket
+import json, os, requests, re, socket, uuid
 from sqlalchemy import text
 from werkzeug.utils import secure_filename
 from urllib.parse import urlparse
@@ -86,10 +86,14 @@ def upload_image():
         upload_folder = current_app.config['UPLOAD_FOLDER']
 
         if extension in ALLOWED_EXTENSIONS:
+
+            # Generate a random filename with UUID
+            randomized_filename = f"{uuid.uuid4().hex}.{extension}"
+
             # Save the file
-            file.save(os.path.join(upload_folder, filename))
+            file.save(os.path.join(upload_folder, randomized_filename))
         
-            current_user.image = filename
+            current_user.image = randomized_filename
             db.session.commit()
 
             flash('Profile image updated successfully', 'success')
@@ -177,7 +181,6 @@ def fetch_url():
         return jsonify({"error": "Access to this host is restricted"}), 403
     
     try:
-
         # Resolve hostname to an IP and validate it
         resolved_ip = ip_address(socket.gethostbyname(hostname))
 

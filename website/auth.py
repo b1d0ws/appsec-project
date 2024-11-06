@@ -2,7 +2,9 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from .models import User, Token
 from . import db
 from flask_login import login_user, login_required, logout_user, current_user
-import hashlib, random, time, secrets, string
+import hashlib, random, time, secrets, string, re
+from werkzeug.security import generate_password_hash, check_password_hash
+import datetime
 
 auth = Blueprint('auth', __name__)
 
@@ -14,14 +16,12 @@ def login():
 
         user = User.query.filter_by(email=email).first()
         if user:
-            if user.password == password:
+            if check_password_hash(user.password, password):
                 flash('Logged in succesfully!', category='success')
                 login_user(user, remember=True)
                 return redirect(url_for('views.home'))
-            else:
-                flash('Incorrect password, try again.', category='error')
-        else:
-            flash('Email does not exist', category='error')
+        
+        flash('Email or password incorrect', category='error')
 
     return render_template("login.html", user=current_user)
 
@@ -30,6 +30,15 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))
+
+def is_valid_password(password):
+    if len(password) < 8:
+        return False
+    if not re.search(r"[A-Za-z]", password):  # At least one letter
+        return False
+    if not re.search(r"\d", password):  # At least one digit
+        return False
+    return True
 
 @auth.route('/sign-up', methods=['GET', 'POST'])
 def sign_up():
@@ -48,17 +57,17 @@ def sign_up():
             flash('First name must be greater than 1 characters', category='error')
         elif password1 != password2:
             flash('Passwords don\'t match', category='error')
-        elif len(password1) < 5:
-            flash('Password must be at least 5 characters', category='error')
+        elif not is_valid_password(password1):
+            flash('Password must be at least 8 characters long and include at least one letter and one number', category='error')
         else:
-            new_user = User(email=email, username=username, password=password1)
+            hashed_password = generate_password_hash(password1)
+            new_user = User(email=email, username=username, password=hashed_password)
             db.session.add(new_user)
             db.session.commit()
             login_user(new_user, remember=True)
             flash('Account created!', category='success')
             return redirect(url_for('views.home'))
             
-
     return render_template("sign_up.html", user=current_user)
 
 # Forgot Password Route
@@ -72,13 +81,13 @@ def forgot_password():
     if user:
         token = str(user.id)
         salt = ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(10))
+
         token = token + hashlib.sha256((token + salt).encode()).hexdigest()  # Generate a secure token
         new_token = Token(user_id=user.id, token=token)
+
         db.session.add(new_token)
         db.session.commit()
-        flash('A recovery email has been sent to your address!', 'success')
-    else:
-        flash('Email address not found!', 'error')
+    flash('A recovery email has been sent to your address!', 'success')
 
     return redirect(url_for('auth.login'))  # Redirect to the login page after submission
 
@@ -90,11 +99,26 @@ def reset_password(token):
     if request.method == 'POST':
         new_password = request.form.get('new_password')
         if token_entry:
-            user = token_entry.user
-            user.password = new_password
-            db.session.commit()
-            flash('Your password has been updated!', 'success')
-            return redirect(url_for('auth.login'))
+
+            expiration_time = token_entry.created_at + datetime.timedelta(minutes=1)
+            if datetime.datetime.utcnow() > expiration_time:
+                flash('The reset link has expired. Please request a new one.', 'error')
+                db.session.delete(token_entry)  # Remove the expired token
+                db.session.commit()
+                return render_template('reset_password.html', token=token, user=current_user)
+
+            if not is_valid_password(new_password):
+                flash('Password must be at least 8 characters long and include at least one letter and one number', category='error')
+            else:
+                user = token_entry.user
+                user.password = generate_password_hash(new_password)
+
+                # Removing token from database
+                db.session.delete(token_entry)
+
+                db.session.commit()
+                flash('Your password has been updated!', 'success')
+                return redirect(url_for('auth.login'))
         else:
             flash('Invalid or expired token.', 'error')
     
@@ -110,18 +134,27 @@ def change_password():
         flash('Invalid CSRF token', 'error')
         return redirect(url_for('views.profile', user_id=current_user.id))
     
+    current_password = request.form.get('current_password')
     new_password = request.form.get('new_password')
     confirm_password = request.form.get('confirm_password')
 
+    # Check if current password is correct
+    if not check_password_hash(current_user.password, current_password):
+        flash('Incorrect password, try again.', category='error')
+
     # Check if new password matches confirmation
-    if new_password != confirm_password:
+    elif new_password != confirm_password:
         flash('Passwords do not match', 'error')
+
+    elif not is_valid_password(new_password):
+        flash('Password must be at least 8 characters long and include at least one letter and one number', category='error')
+
+    else:
+        # Update the password
+        current_user.password = generate_password_hash(new_password)
+        db.session.commit()
+        flash('Password updated successfully', 'success')
         return redirect(url_for('views.profile', user_id=current_user.id))
-
-    # Update the password
-    current_user.password = new_password
-    db.session.commit()
-    flash('Password updated successfully', 'success')
+    
     return redirect(url_for('views.profile', user_id=current_user.id))
-
 
