@@ -1,7 +1,3 @@
-body {
-    font-family: cursive; /* Apply the chosen font */
-}
-
 .navbar-nav .nav-link {
     font-size: 1.2rem; /* Increase font size of navbar items */
     font-weight: 500; /* Make the font bolder */
