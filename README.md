@@ -1,7 +1,5 @@
 # appsec-project
 
-## Description
-
 Hello, welcome to the b1d0ws appsec project!
 
 The goal of this repository is to accompany the AppSec project featured on my Hashnode blog. You can find the first chapter [here](https://b1d0ws.hashnode.dev/appsec-project-chapter-1-manually-fixing-vulnerabilities).
